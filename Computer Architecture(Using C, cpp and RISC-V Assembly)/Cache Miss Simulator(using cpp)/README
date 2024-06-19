@@ -1,0 +1,35 @@
+NOTE:
+    This Program Supports All parts i.e. Parts 1, 2, 3 and 4 of problem statement.
+
+
+Instructions -
+(test .config and .access files provided)
+
+1.  g++ cache_simulator.cpp
+2.  ./a.out
+3.  Enter Configuration File name (Ex. cache.config)
+4.  Enter input/access file name (Ex. cache.access)
+5.  We get the output.
+
+
+
+Config file constraints -
+1.  Give input in this order:
+        1)  SIZE_OF_CACHE (number)
+        2)  BLOCK_SIZE (number)
+        3)  ASSOCIATIVITY (number)
+        4)  REPLACEMENT_POLICY (FIFO or LRU or RANDOM. "all need to be uppercase" )
+        5)  WRITEBACK_POLICY (WB or WT. "all need to be uppercase")
+
+2.  All parameters need to be on new line.
+3.  No spaces allowed.
+
+
+Input/Access file constraints -
+1.  Format-
+            MODE(R/W): (Single space here, before address)ADDRESS(Hexadecimal)
+
+2.  Every access needs to be on new line. No spaces allowed before Mode.
+3.  Mode can be R/W (uppercase only) and no spaces before it on the line.
+4.  After "MODE:" EXACTLY ONE SPACE before ADDRESS is needed
+5.  ADDRESS needs to be hexadecimal.

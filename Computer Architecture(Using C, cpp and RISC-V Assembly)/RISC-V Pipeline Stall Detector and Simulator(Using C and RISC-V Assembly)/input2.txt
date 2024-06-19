@@ -1,0 +1,7 @@
+add x14, x12, x11
+add x15, x14, x12
+ld x13, 8(x13)
+ld x12, 0(x14)
+and x13, x15, a3
+ld x11, 4(x13)
+sd x13, 0(x15)

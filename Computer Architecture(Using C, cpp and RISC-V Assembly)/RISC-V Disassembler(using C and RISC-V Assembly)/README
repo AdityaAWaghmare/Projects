@@ -1,0 +1,30 @@
+This program Supports all the instructions given till part-4(last part) as well as labelling.
+Work for all parts is completed.
+Hence the work for whole 100% weightage has been done(including report).
+
+
+Steps to run -
+  I) Go to the folder where the zip file is extracted to.
+ II) Run following commands on the terminal 
+    1. gcc disassembler.c
+    2. ./a.out
+III) Enter the input file name.
+
+We get the output.
+
+Note: An input file which consists all the asked instructions(also instructions which need label) is provided.
+      Its test values where all checked to be correct.
+
+
+Input file conditions:
+1)  Instruction should be present in hexadecimal(exactly 8 characters)
+    (works with or without '0x' prefix)
+
+2)  hexadecimal instruction must have 8 characters or digits.
+    (input cannot be 'FFFF'(not allowed) instead of '0000FFFF'(allowed))
+
+3)  Each instruction should be written on seperate line.
+
+4)  If first character of line is ' '(space) or '\n'(i.e. newline) or '\t'(i.e. tab) then this line is ignored in the program.
+
+Important: It is assumed that instructions are from the ones given in problem statement.

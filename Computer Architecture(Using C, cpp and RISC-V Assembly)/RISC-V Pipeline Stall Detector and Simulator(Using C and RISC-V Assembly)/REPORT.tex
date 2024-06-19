@@ -1,0 +1,235 @@
+\documentclass{article}
+\usepackage{geometry}
+\usepackage{listings}
+\usepackage{color}
+\usepackage{hyperref}
+\usepackage{listings}
+% Define a custom background color
+\definecolor{codebackground}{rgb}{0.95,0.95,0.95}
+\definecolor{mygray}{rgb}{0.5,0.5,0.5}
+
+\lstset{
+    basicstyle=\ttfamily,
+    backgroundcolor=\color{white},
+    keywordstyle=\color{blue},
+    commentstyle=\color{mygray},
+    showstringspaces=false,
+    numbers=left,
+    numberstyle=\tiny,
+    numbersep=5pt,
+    breaklines=true,
+    frame=single,
+    breakatwhitespace=false,
+}
+
+\geometry{a4paper, margin=1in}
+
+\title{Lab-5 (Pipeline Stall Detector/Simulator)}
+\author{CS22BTECH11061}
+
+\begin{document}
+\maketitle
+
+\section{Coding Approach}
+The program is implemented in C for Pipeline Stall Detection and consists of several functions for this purpose. Here is an overview of the coding approach:
+
+\subsection{Struct Instruction data-type}
+The program defines a data structure called \texttt{Instruction}, which stores the instruction string and the number of NOP instructions required with and without forwarding.
+
+\begin{lstlisting}[language=C, caption={struct Instruction}, label={code-get-rd}, backgroundcolor=\color{codebackground}]
+    typedef struct Instruction{
+        char string[33];
+        
+        int nop_without_forwarding;//nops before this instruction
+        int nop_with_forwarding;
+    
+    } Instruction;
+\end{lstlisting}
+
+\subsection{Parsing the Instructions}
+The program uses functions like \texttt{translate\_register\_name()}, \texttt{stop\_at\_character()}, \texttt{get\_rs1\_rs2()}, and \texttt{get\_rd()} to parse the instructions, extract the registers involved, and determine the type of instruction (load, store, or other), as well as string.h library functions like \texttt{strtok()}.
+
+\subsubsection{\texttt{get\_rd()}}
+The function \texttt{get\_rd()} uses \texttt{strtok()}, \texttt{stop\_at\_character()} to parse the string for rd register name and then uses \texttt{translate\_register\_name()} to translate the register name from its alias.
+
+\begin{lstlisting}[language=C, caption={get\_rd function}, label={code-get-rd}, backgroundcolor=\color{codebackground}]
+    int get_rd(char rd[10], char original_instruction[33]){
+        char instruction[33];
+        strcpy(instruction, original_instruction);
+    
+        char *token = strtok(instruction, " ");//token contains instruction name
+        char name[10];
+        strcpy(name, token);
+        token = strtok(NULL, " ");//now it contains rd
+    
+        strcpy(rd, token);
+        stop_at_character(rd, ',');
+    
+        translate_register_name(rd);
+    
+        if(name[0] == 'l'){
+            return 1;//for load
+        }
+        else if(name[0] = 's' && strlen(name) == 2){
+            return 2;//for store
+        }
+        else{
+            return 0;
+        }
+    }
+\end{lstlisting}
+
+\subsubsection{get\_rs1\_rs2()}
+In this function similar approach as \texttt{get\_rd()} is used.
+
+\begin{lstlisting}[language=C, caption={get\_rs1\_rs2 function}, label={code-get-rs1-rs2}, backgroundcolor=\color{codebackground}]
+    void get_rs1_rs2(char rs1[10], char rs2[10], char original_instruction[33]){
+        char instruction[33];
+        strcpy(instruction, original_instruction);//original inst passed by ref, so cannot make changes 
+
+        char *token = strtok(instruction, " ");//token contains instruction name
+        char name[10];//instruction name 
+        strcpy(name, token);
+
+        token = strtok(NULL, " ");//now it contains rd
+        
+        char rd[10];//dest name
+        strcpy(rd, token);
+        stop_at_character(rd, ',');
+
+        token = strtok(NULL, " ");//now it contains rs1
+
+        strcpy(rs1, token);
+        stop_at_character(rs1, ',');
+
+        for(int i=0; i<strlen(rs1); i++){//for load or store
+            if(rs1[i] == '('){
+                stop_at_character(rs1 + (i+1), ')');//end string at ')'
+
+                char buffer[10];
+                strcpy(buffer, rs1);//for undefined behaviour if any
+                strcpy(rs1, buffer+(i+1));
+                break;
+            }
+        }
+
+        token = strtok(NULL, " ");//contains rs2 if it exists else null
+
+        if(token != NULL){
+            strcpy(rs2, token);
+        }
+        else{
+            strcpy(rs2, "l/s");//for load or store
+        }
+        
+        stop_at_character(rs2, '\n');//get rid of newline character
+
+        if(name[0] == 's' && strlen(name) ==  2){// for s both of this are sources and not dest
+            strcpy(rs2, rs1);
+            strcpy(rs1, rd);
+        }
+
+        translate_register_name(rs1);
+        //printf("rs1 = %s\n", rs1);
+        translate_register_name(rs2);
+    }
+\end{lstlisting}
+
+\subsubsection{translate\_register\_name()}
+\texttt{translate\_register\_name()} is used to translate from callee convention to names like x0, x1, ..,etc. It is implemented by comparing strings and reassigning them as needed. You can see the Implementation in the c code.
+
+
+\subsection{get\_instructions\_with\_stalls()}
+To detect data hazards, function examines the dependencies between instructions. It checks for hazards between the current instruction and the previous two instructions. If a hazard is detected, function inserts NOP instructions accordingly.
+
+\subsubsection{Without Forwarding}
+For all instructions other than store, there can be data hazards for instructions which come after them. Which need two NOPS or instructions between those instructions to resolve. So we add NOPS accordingly.
+
+\subsubsection{With Forwarding}
+There can be a data hazard after load instructions, which need 1 NOP or instruction gap to resolve. We add nops accordingly.
+
+\begin{lstlisting}[language=C, caption={get\_instructions\_with\_stalls function}, label={hazard-detection}, backgroundcolor=\color{codebackground}]
+    void get_instructions_with_stalls(int IC, Instruction instructions[IC]){
+    
+        for(int current=0; current<IC; current++){
+            if(current == 0) continue;//no stalls before first instruction
+
+            //getting rs1 and rs2 for current instruction
+            char rs1[10], rs2[10];
+
+            get_rs1_rs2(rs1, rs2, instructions[current].string);
+
+            char prev_rd[10];
+            int type = get_rd(prev_rd, instructions[current - 1].string);
+
+            //when prev_rd is not x0
+            //prev instruction is not store
+            //rs1 or rs2 uses prev_rd
+            if(strcmp(prev_rd, "x0") != 0 && type != 2 &&(strcmp(rs1, prev_rd) == 0 || strcmp(rs2, prev_rd) == 0) ){
+                instructions[current].nop_without_forwarding = 2;//nop for prev instruction withoud forwarding
+
+                //for load
+                if(type == 1){
+                    instructions[current].nop_with_forwarding = 1;
+                }
+            }
+            else{//only when no hazard in prev instruction we check for prev to prev
+                if(current == 1) continue;//no prev to prev inst present in this case
+                if(instructions[current-1].nop_without_forwarding > 0) continue;//more than equal to 2 inst gap already
+
+                char prev_prev_rd[10];
+                get_rd(prev_prev_rd, instructions[current - 2].string);
+                
+                //when match and not store inst
+                if(type != 2 && (strcmp(rs1, prev_prev_rd) == 0 || strcmp(rs2, prev_prev_rd) == 0) ){
+                    instructions[current].nop_without_forwarding = 1;
+                }
+            }
+    }
+}
+
+\end{lstlisting}
+
+\subsection{Printing the Solution}
+The \texttt{print()} function prints the nops according to the values stored in \texttt{Instruction} data type. While printing the instructions and nops, it also calculates the rquired cycles and prints it.
+
+\begin{lstlisting}[language=C, caption={get\_rs1\_rs2 function}, label={code-print}, backgroundcolor=\color{codebackground}]
+    void print(int IC, Instruction instructions[IC]){
+
+        int cycles = IC+4;
+        printf("\nNo Forwarding : \n\n");
+        for(int i=0; i<IC; i++){
+            int nops = instructions[i].nop_without_forwarding;
+            cycles += nops;
+
+            for(int j=0; j<nops; j++){
+                printf("nop\n");
+            }
+
+            printf("%s", instructions[i].string);
+        }
+        printf("\nCycles = %d\n", cycles);
+        printf("\n");
+
+
+        cycles = IC+4;
+        printf("Forwarding : \n\n");
+        for(int i=0; i<IC; i++){
+            int nops = instructions[i].nop_with_forwarding;
+            cycles += nops;
+
+            for(int j=0; j<nops; j++){
+                printf("nop\n");
+            }
+
+            printf("%s", instructions[i].string);
+        }
+        printf("\nCycles = %d\n", cycles);
+        printf("\n");
+    }
+\end{lstlisting}
+
+\section{Conclusion}
+The program successfully identifies and resolves data hazards in the assembly instructions by inserting appropriate NOP instructions. It offers solutions both with and without data forwarding, providing insights into the impact of forwarding techniques on the pipeline execution. The program is tested for correctness with the provided test input files.
+
+\end{document}

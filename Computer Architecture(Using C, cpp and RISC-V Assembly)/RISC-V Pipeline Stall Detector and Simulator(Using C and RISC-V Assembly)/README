@@ -1,0 +1,21 @@
+Instructions to use the program:
+
+Running the program -
+1) gcc pipeline_stall_detector.c
+2) ./a.out
+3) Input the file address or name.
+    (Ex. for the given test file in the zip folder, its address is 'input1.txt')
+4) We get the output.
+
+
+Input file Constraints -
+1) The program is syntactically correct (there is no syntax error)
+2) There is only 1 space in between the instruction and the first operand. Also, only 1 space between “,” and second operand and so on.
+3) The program starts on the first character in each line
+4) There is only one instruction in each line
+5) There are no blank lines in the input file
+6) No branch/jump instructions are used(as given in problem statement)
+7) There are no labels used in the program (also given in problem statement)
+8) There is no space between "," and operand which comes before it.
+
+Example input files named input1.txt, input2.txt, input3.txt are provided.
